@@ -1,0 +1,6 @@
+{
+  "python": "3.12.14",
+  "pymupdf": "1.28.2",
+  "mupdf": "1.28.2",
+  "legacy_temp_folder_count": 48
+}

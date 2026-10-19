@@ -1,0 +1,106 @@
+[
+  {
+    "path": "main.py",
+    "sha256": "c8e89faf993407eb46bee2105ab18008035a927af109528cb64f06eff17b0ea6"
+  },
+  {
+    "path": "packaging/paperlight.iss",
+    "sha256": "51f3d8a24f2774497cc686110746c7547eae97896003c1503c769760ea932b9e"
+  },
+  {
+    "path": "paperlight/__init__.py",
+    "sha256": "82e59ff0a6d94110a9dd7b2eb103eb535a5fdc56003529ece2c52c79506ed74e"
+  },
+  {
+    "path": "paperlight/app.py",
+    "sha256": "0d10bd9e34a47a09b45e1e66fc6e4c0f2b74b384cbb31b8c4d807fed3b52eb78"
+  },
+  {
+    "path": "paperlight/core.py",
+    "sha256": "ba00bde67f3e68b6ec0cf0371afbf48b426ff863a3896afc58a05eb73220a628"
+  },
+  {
+    "path": "paperlight/i18n.py",
+    "sha256": "f47b942f956d8d14c088e9107f0bdac241acd51e6406b98e5bfbfee14768cfeb"
+  },
+  {
+    "path": "paperlight/local_protection.py",
+    "sha256": "f7366b074e1fdd5d23e5602ed12185c768e5f4f1eb89f1bf3a8ec19a708b5886"
+  },
+  {
+    "path": "paperlight/protection_dialog.py",
+    "sha256": "5fa14d5c936291da83f8ac91c6bb7a6f91438ae72bdaa6217e4e3baaa34ff177"
+  },
+  {
+    "path": "paperlight/security.py",
+    "sha256": "b08fc82fc62d60773e8969f2368ce5bbd787473a9bf44c48099998ab532cade7"
+  },
+  {
+    "path": "paperlight/selection.py",
+    "sha256": "93a7c9349d0c2cccca98426e255e8ed8b6d88f58c2fd744e64be278620270aa8"
+  },
+  {
+    "path": "paperlight/signatures.py",
+    "sha256": "cfa724876a601a5cd8b4f13f25e3967a1d8841a9db4edaad0add63de7f8dca92"
+  },
+  {
+    "path": "paperlight/theme.py",
+    "sha256": "c6abf77fb51db4aac7a9ce07509f085a1cbc4d23a693dca45bc608d03b51c843"
+  },
+  {
+    "path": "paperlight/typography.py",
+    "sha256": "c9ab1155a38d4a07e8837ad137a00d0bc8283d47b0df95f872a102d54390e76c"
+  },
+  {
+    "path": "paperlight/worker.py",
+    "sha256": "16232445e7e74e809a3744aa0ca2dc480ee30232ed1632e4f1a0ab25922fb627"
+  },
+  {
+    "path": "requirements.txt",
+    "sha256": "74c25c165eb575eb035651df290de66e77ca2d3494a14de71f27fb6f1ee75073"
+  },
+  {
+    "path": "tools/benchmark.py",
+    "sha256": "d0a9835cab80e5b5102f2054b1002e6da48cf972423e5e7f6989814e3bf97333"
+  },
+  {
+    "path": "tools/build.ps1",
+    "sha256": "0ced503b9316e52428f46e451742d28221687601da4541777c0605c8ecfe9b80"
+  },
+  {
+    "path": "tools/capture_chinese.py",
+    "sha256": "0036f353b21855a4cd6ce89bc120d40f8987fb4e345a9071ed93efa99b2f7f2c"
+  },
+  {
+    "path": "tools/capture_reader_features.py",
+    "sha256": "cd228469e179f07d6623703b72ad0f1f23b1c3710f2c072654f162a9f701105e"
+  },
+  {
+    "path": "tools/capture_redesign.py",
+    "sha256": "e7fee6009266a7b3c56f928c1fda8361b8171b8eb0d5a7abe9cd1cdee51be979"
+  },
+  {
+    "path": "tools/fix_runtime.py",
+    "sha256": "a58beb28111c6bfc0027e2c1c6d8f6837343e3f3fb4060b725e0fe8fde8b5547"
+  },
+  {
+    "path": "tools/make_demo.py",
+    "sha256": "518562440d29ffe2bdd3f49259fead31999d4208e6cb17bb1b337898555c6b4d"
+  },
+  {
+    "path": "tools/make_icon.py",
+    "sha256": "f53fa6d0da12f1b77acf3cab6e9c115d1ef30e9f4fe499c0c1e307b25685309b"
+  },
+  {
+    "path": "tools/package_source.py",
+    "sha256": "7d36eeef27bf14c6f62aa1336e161de24cbfe306d90ee5aa5d6a400da522aa41"
+  },
+  {
+    "path": "tools/security_evidence.py",
+    "sha256": "c9a68d70d77d7af586ce93d5b3e7064c7b1f31e39091a105497e4698d0fe0a95"
+  },
+  {
+    "path": "tools/verify_package.py",
+    "sha256": "c275a726f80a8f24a50a4357114231547132f74d81a5bacbc01541d24c33a695"
+  }
+]

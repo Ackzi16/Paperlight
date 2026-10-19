@@ -1,0 +1,11 @@
+.venv/
+build/
+dist/
+__pycache__/
+.pytest_cache/
+.scratch/*
+!.scratch/preview/
+.scratch/preview/*
+!.scratch/preview/issues/
+tmp/
+*.spec

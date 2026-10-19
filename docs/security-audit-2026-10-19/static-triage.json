@@ -1,0 +1,90 @@
+[
+  {
+    "file": "paperlight\\app.py",
+    "line": 594,
+    "test": "B105",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  },
+  {
+    "file": "paperlight\\app.py",
+    "line": 1041,
+    "test": "B105",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  },
+  {
+    "file": "paperlight\\app.py",
+    "line": 1470,
+    "test": "B105",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  },
+  {
+    "file": "paperlight\\core.py",
+    "line": 113,
+    "test": "B107",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  },
+  {
+    "file": "paperlight\\core.py",
+    "line": 183,
+    "test": "B110",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Destructor cleanup is best effort; normal close performs cleanup. Crash remnants remain a documented limitation."
+  },
+  {
+    "file": "paperlight\\core.py",
+    "line": 254,
+    "test": "B107",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  },
+  {
+    "file": "paperlight\\i18n.py",
+    "line": 102,
+    "test": "B105",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  },
+  {
+    "file": "paperlight\\security.py",
+    "line": 38,
+    "test": "B107",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  },
+  {
+    "file": "paperlight\\typography.py",
+    "line": 76,
+    "test": "B112",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "A font candidate that cannot be parsed is skipped in favor of the next candidate. Missing-font fallback is disclosed in the editor."
+  },
+  {
+    "file": "paperlight\\typography.py",
+    "line": 192,
+    "test": "B112",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "A font candidate that cannot be parsed is skipped in favor of the next candidate. Missing-font fallback is disclosed in the editor."
+  },
+  {
+    "file": "paperlight\\worker.py",
+    "line": 70,
+    "test": "B107",
+    "severity": "LOW",
+    "disposition": "reviewed",
+    "reason": "Empty-password defaults support intentionally unprotected/publicly readable PDFs, or this is a translated UI label. No hardcoded secret."
+  }
+]
