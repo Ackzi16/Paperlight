@@ -26,6 +26,9 @@ from .worker import search_words, word_rows, valid_record
 from .theme import STYLE, icon, tool_cursor
 from .typography import TextStyle
 from .selection import PageText
+from .inline_text import InlineTextBox
+from .object_ui import ObjectCanvasMixin,ObjectWindowMixin
+from .edit_controller import EditController
 from .i18n import t,LanguageManager,activate
 from .protection_dialog import ProtectionDialog
 from .signatures import SignatureDialog, SignatureStore, format_date, normalize_strokes
@@ -42,9 +45,16 @@ def pixmap_from_page(page, scale, annotations=True):
     return QPixmap.fromImage(image)
 
 
-class Canvas(QGraphicsView):
+class Canvas(ObjectCanvasMixin,QGraphicsView):
     gesture = Signal(str, object)
+    object_chosen=Signal(object)
+    object_changed=Signal(object)
+    object_menu=Signal(object)
+    object_deleted=Signal()
+    preview_requested=Signal(object)
+    edit_refresh_requested=Signal()
     clicked = Signal(object)
+    text_clicked = Signal(object)
     remove_at = Signal(object)
     zoom_request = Signal(int)
     viewport_changed=Signal()
@@ -55,6 +65,7 @@ class Canvas(QGraphicsView):
     def __init__(self):
         super().__init__()
         self.setScene(QGraphicsScene(self))
+        self.object_init()
         self.setBackgroundBrush(QColor('#d3d3d8'))
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
@@ -96,6 +107,7 @@ class Canvas(QGraphicsView):
         self.select_dragging=False
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag if mode == 'read' else QGraphicsView.DragMode.NoDrag)
         self.setCursor(tool_cursor(mode))
+        self.paint_objects()
 
     def show_page(self, page, scale):
         self.continuous_doc = None
@@ -111,9 +123,12 @@ class Canvas(QGraphicsView):
         self.page_transform = page.derotation_matrix
         self.page_bounds = page.rect * page.derotation_matrix
         self.form_rects=[fitz.Rect(w.rect) for w in page.widgets() or []]
-        pixmap = pixmap_from_page(page, scale)
+        self.active_page=page.number
+        self.edit_source_path=str(page.parent.name)
+        pixmap = self.edit_placeholder(page,scale) if self.mode=='edit' else pixmap_from_page(page, scale)
+        if self.mode!='edit':self.remember_edit_raster(page,pixmap,scale)
         self.scene().addRect(3,5,pixmap.width(),pixmap.height(),QPen(Qt.PenStyle.NoPen),QBrush(QColor(0,0,0,24)))
-        self.scene().addPixmap(pixmap)
+        self.single_page_image=self.scene().addPixmap(pixmap)
         self.scene().setSceneRect(-32, -24, pixmap.width()+64, pixmap.height()+48)
 
     def show_document(self, doc, scale, key, current):
@@ -172,13 +187,28 @@ class Canvas(QGraphicsView):
         for n in sorted(wanted-set(self.page_images)):
             page = doc[n]
             raster_scale = min(self.factor,4096/max(page.rect.width,page.rect.height))
-            pix = pixmap_from_page(page,raster_scale)
+            pix = self.edit_placeholder(page,raster_scale) if self.mode=='edit' else pixmap_from_page(page,raster_scale)
+            if self.mode!='edit':self.remember_edit_raster(page,pix,raster_scale)
             item = self.scene().addPixmap(pix)
             item.setScale(self.factor/raster_scale)
             item.setPos(self.page_layout[n].topLeft())
             self.page_images[n] = item
+        if self.mode=='edit' and wanted!=getattr(self,'edit_visible_pages',None):
+            self.edit_visible_pages=wanted;self.edit_refresh_requested.emit()
         if activate and not self.points and not self.select_dragging:
             self.activate_page(self.page_at(self.viewport().rect().center()))
+
+    def remember_edit_raster(self,page,pixmap,scale):
+        if not hasattr(self,'edit_raster_cache'):self.edit_raster_cache={}
+        self.edit_raster_cache[(str(page.parent.name),page.number)]=(pixmap,scale)
+        while len(self.edit_raster_cache)>6:self.edit_raster_cache.pop(next(iter(self.edit_raster_cache)))
+
+    def edit_placeholder(self,page,scale):
+        cache=getattr(self,'edit_raster_cache',{})
+        cached=cache.get((str(page.parent.name),page.number))
+        if cached:
+            return cached[0].scaled(max(1,round(page.rect.width*scale)),max(1,round(page.rect.height*scale)),Qt.AspectRatioMode.IgnoreAspectRatio,Qt.TransformationMode.SmoothTransformation)
+        pixmap=QPixmap(max(1,round(page.rect.width*scale)),max(1,round(page.rect.height*scale)));pixmap.fill(QColor('white'));return pixmap
 
     def scroll_to_page(self, index):
         if not self.page_layout:
@@ -240,20 +270,24 @@ class Canvas(QGraphicsView):
                 super().mousePressEvent(event)
                 return
             self.activate_page(index)
+        if self.object_press(event): return
         if self.scene().items() and event.button() == Qt.MouseButton.RightButton:
-            if self.mode=='select':
+            if self.mode in ('read','select'):
                 self.selection_menu.emit(event.globalPosition().toPoint())
                 return
             self.remove_at.emit(self.pdf_point(event.position().toPoint()))
             return
-        if self.mode == 'read' or not self.scene().items():
+        p = self.pdf_point(event.position().toPoint())
+        automatic_select = self.mode=='read' and self.text_model.contains(p)
+        if (self.mode == 'read' and not automatic_select) or not self.scene().items():
             super().mousePressEvent(event)
             if self.mode=='read' and event.button()==Qt.MouseButton.LeftButton:
                 self.setCursor(Qt.CursorShape.ClosedHandCursor)
             return
         if event.button() == Qt.MouseButton.LeftButton:
             p = self.pdf_point(event.position().toPoint())
-            if self.mode=='select':
+            if self.mode=='select' or automatic_select:
+                self.setDragMode(QGraphicsView.DragMode.NoDrag)
                 self.setFocus()
                 self.select_dragging=True
                 caret=self.text_model.caret(p)
@@ -261,6 +295,9 @@ class Canvas(QGraphicsView):
                     self.select_range(self.selection_start,caret)
                 else:
                     self.select_range(caret,caret)
+                return
+            if self.mode == 'text':
+                self.text_clicked.emit(p)
                 return
             if self.mode == 'form':
                 self.clicked.emit(p)
@@ -270,7 +307,12 @@ class Canvas(QGraphicsView):
             self.preview = None
 
     def mouseMoveEvent(self, event):
-        if self.mode=='select' and self.select_dragging:
+        if self.object_move(event): return
+        if self.continuous_doc is not None and self.mode in ('read','select') and not event.buttons():
+            index=self.page_at(event.position().toPoint())
+            if self.page_layout[index].contains(self.mapToScene(event.position().toPoint())):
+                self.activate_page(index)
+        if self.select_dragging:
             self.select_range(self.selection_start,self.text_model.caret(self.pdf_point(event.position().toPoint())))
             return
         if not self.points:
@@ -282,7 +324,7 @@ class Canvas(QGraphicsView):
             elif self.mode=='form':
                 self.setCursor(Qt.CursorShape.PointingHandCursor if any(r.contains(rotated) for r in self.form_rects)
                                else Qt.CursorShape.ArrowCursor)
-            elif self.mode=='select':
+            elif self.mode in ('read','select') and not event.buttons():
                 self.setCursor(Qt.CursorShape.IBeamCursor if self.text_model.contains(rotated) else Qt.CursorShape.ArrowCursor)
             elif self.mode=='read' and event.buttons() & Qt.MouseButton.LeftButton:
                 self.setCursor(Qt.CursorShape.ClosedHandCursor)
@@ -307,8 +349,11 @@ class Canvas(QGraphicsView):
             self.preview = self.scene().addRect(x,y,w,h,QPen(QColor('#346fa9'),1.3,Qt.PenStyle.DashLine),QBrush(fill))
 
     def mouseReleaseEvent(self, event):
-        if self.mode=='select' and self.select_dragging:
+        if self.object_release(event): return
+        if self.select_dragging:
             self.select_dragging=False
+            if self.mode=='read':
+                self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
             self.select_range(self.selection_start,self.text_model.caret(self.pdf_point(event.position().toPoint())))
             return
         if not self.points:
@@ -330,7 +375,12 @@ class Canvas(QGraphicsView):
                 self.preview = None
 
     def mouseDoubleClickEvent(self,event):
-        if self.mode=='select' and event.button()==Qt.MouseButton.LeftButton:
+        if self.mode=='edit' and event.button()==Qt.MouseButton.LeftButton:
+            obj=self.object_hit(self.pdf_point(event.position().toPoint()))
+            if obj and obj.kind in ('text','ocr','annotation'):
+                self.object_drag=None;self.selected_object=obj;self.paint_objects();self.object_chosen.emit(obj)
+                return
+        if self.mode in ('read','select') and self.text_model.contains(self.pdf_point(event.position().toPoint())) and event.button()==Qt.MouseButton.LeftButton:
             self.select_dragging=False
             caret=self.text_model.caret(self.pdf_point(event.position().toPoint()))
             self.select_range(*self.text_model.word_range(caret))
@@ -338,6 +388,13 @@ class Canvas(QGraphicsView):
         super().mouseDoubleClickEvent(event)
 
     def keyPressEvent(self,event):
+        if self.object_keypress(event):return
+        if self.mode=='edit' and event.key()==Qt.Key.Key_Escape and self.object_drag:
+            obj=self.object_drag['obj'];self.object_drag=None
+            if obj.kind in ('text','ocr','annotation'):self.object_changed.emit(dict(obj=obj,transform=tuple(fitz.Identity),cancel=True))
+            self.apply_preview_transform(fitz.Identity);self.paint_objects();return
+        if self.mode=='edit' and event.key() in (Qt.Key.Key_Delete,Qt.Key.Key_Backspace):
+            self.object_deleted.emit();return
         if event.key()==Qt.Key.Key_Escape and self.selected_text:
             self.select_range(0,0)
             return
@@ -579,7 +636,7 @@ class TextDialog(QDialog):
                              line_height=self.line_spacing.value(),align=self.alignment.currentData())
 
 
-class Window(QMainWindow):
+class Window(ObjectWindowMixin,QMainWindow):
     def __init__(self,language_manager=None,signature_store=None):
         super().__init__()
         self.language_manager=language_manager if language_manager is not None else LanguageManager()
@@ -588,6 +645,8 @@ class Window(QMainWindow):
         self.setMinimumSize(960, 640)
         self.setWindowTitle(t('Paperlight'))
         self.session = None
+        self.inline_text = None
+        self.ocr_apply_requested = False
         self.page_index = 0
         self.zoom = 1.0
         self.fit_mode = True
@@ -623,6 +682,7 @@ class Window(QMainWindow):
         self.search_hits = []
         self.document_actions = []
         self.build_ui()
+        self.edit_controller=EditController(self)
         self.language_manager.changed.connect(self.apply_language)
         self.apply_language(self.language_manager.current)
         self.thumbnail_timer = QTimer(self)
@@ -721,7 +781,7 @@ class Window(QMainWindow):
         title_layout.addWidget(self.document_label)
         title_layout.addWidget(self.document_detail)
         toolbar.addWidget(title_panel)
-        self.index_action = self.action(t('Recognize text'), lambda: self.start_index(True), view=True)
+        self.index_action = self.action(t('Recognize text'), self.recognize_document, view=True)
         tools_menu.addAction(self.index_action)
         self.stop_action = self.action(t('Stop OCR'), self.stop_index)
         tools_menu.addAction(self.stop_action)
@@ -761,9 +821,6 @@ class Window(QMainWindow):
         toolbar.addSeparator()
         control(toolbar,find_action,'search')
         control(toolbar,self.index_action,'ocr')
-        self.markup_toggle=self.action(t('Markup'),self.toggle_markup,'Ctrl+Shift+M',False)
-        self.markup_toggle.setCheckable(True)
-        control(toolbar,self.markup_toggle,'markup',True)
 
         self.addToolBarBreak()
         markup = QToolBar(t('Markup'))
@@ -771,10 +828,13 @@ class Window(QMainWindow):
         markup.setObjectName('markupBar')
         markup.setIconSize(QSize(20,20))
         markup.setMovable(False)
-        self.addToolBar(markup)
+        self.basic_bar = QToolBar(t('Edit'))
+        self.basic_bar.setMovable(False)
+        self.basic_bar.setIconSize(QSize(20,20))
+        self.addToolBar(self.basic_bar)
         self.tool_group = QActionGroup(self)
         self.tool_actions = {}
-        tools = [('read','Read'),('select','Select text'),('draw','Draw / sign'),('text','Add text'),
+        tools = [('edit','Edit PDF'),('read','Read'),('select','Select text'),('draw','Draw / sign'),('text','Add text'),
                  ('correct','Correct text'),('signature','Saved signature'),('image','Signature image'),
                  ('form','Fill form'),('redact','Redact')]
         for mode, label in tools:
@@ -783,7 +843,7 @@ class Window(QMainWindow):
             a.setCheckable(True)
             a.triggered.connect(lambda checked=False,m=mode:self.choose_tool(m))
             self.tool_group.addAction(a)
-            control(markup,a,mode)
+            control(self.basic_bar,a,mode,mode=='edit')
             self.tool_actions[mode]=a
             self.document_actions.append(a)
         tools_menu.addAction(self.tool_actions['signature'])
@@ -793,13 +853,13 @@ class Window(QMainWindow):
         self.tool_actions['read'].setChecked(True)
         self.tool_actions['select'].setShortcut('Ctrl+Shift+T')
         edit_menu.addAction(self.tool_actions['select'])
-        markup.addSeparator()
+        self.basic_bar.addSeparator()
         self.color_button = QPushButton(t('●'))
         self.color_button.setFixedWidth(34)
         self.color_button.setStyleSheet('color:#245fae;font-size:18px;padding:0;')
         self.color_button.setToolTip(t('Ink color'))
         self.color_button.clicked.connect(self.pick_color)
-        markup.addWidget(self.color_button)
+        self.basic_bar.addWidget(self.color_button)
         self.pen_width = NumberEdit()
         self.pen_width.setDecimals(1)
         self.pen_width.setRange(.5,12)
@@ -808,22 +868,21 @@ class Window(QMainWindow):
         self.pen_width.setSuffix(' pt')
         self.pen_width.setFixedWidth(80)
         self.pen_width.setToolTip(t('Stroke width'))
-        markup.addWidget(self.pen_width)
-        markup.addSeparator()
+        self.basic_bar.addWidget(self.pen_width)
         self.apply_action = self.action(t('Apply redactions'),self.apply_redactions)
-        control(markup,self.undo_action,'undo')
-        control(markup,self.redo_action,'redo')
-        markup.addSeparator()
-        control(markup,self.apply_action,'redact',True)
+        self.basic_bar.addSeparator()
+        control(self.basic_bar,self.undo_action,'undo')
+        control(self.basic_bar,self.redo_action,'redo')
+        control(self.basic_bar,self.apply_action,'redact',True)
         tools_menu.addAction(self.apply_action)
         spacer=QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Preferred)
-        markup.addWidget(spacer)
+        self.basic_bar.addWidget(spacer)
         self.active_tool_label=QLabel(t('Read'))
         self.active_tool_label.setFixedWidth(135)
         self.active_tool_label.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
         self.active_tool_label.setStyleSheet('color:#82828c;padding:0 10px;')
-        markup.addWidget(self.active_tool_label)
+        self.basic_bar.addWidget(self.active_tool_label)
         markup.hide()
 
         for title, slot, key in [('Rotate right',self.rotate,'Ctrl+R'),
@@ -899,6 +958,16 @@ class Window(QMainWindow):
         self.canvas.page_activated.connect(self.continuous_page_changed)
         self.canvas.selection_changed.connect(self.selection_updated)
         self.canvas.selection_menu.connect(self.show_selection_menu)
+        self.canvas.commit_draft=self.commit_inline_text
+        self.canvas.object_chosen.connect(self.choose_object)
+        self.canvas.object_changed.connect(self.transform_object)
+        self.canvas.object_menu.connect(self.object_context_menu)
+        self.canvas.object_deleted.connect(self.delete_selected_object)
+        self.canvas.preview_requested.connect(lambda obj:self.edit_controller.preview(obj))
+        self.canvas.edit_refresh_requested.connect(lambda:QTimer.singleShot(0,self.update_page_objects))
+        self.canvas.text_clicked.connect(self.start_inline_text)
+        self.canvas.verticalScrollBar().valueChanged.connect(self.position_inline_text)
+        self.canvas.horizontalScrollBar().valueChanged.connect(self.position_inline_text)
         self.canvas.addActions([self.copy_action,self.select_all_action])
         self.canvas.viewport_changed.connect(lambda:QTimer.singleShot(0,lambda:self.render(self.continuous)) if self.session and self.fit_mode else None)
         content_layout.addWidget(self.canvas,1)
@@ -1000,7 +1069,11 @@ class Window(QMainWindow):
         for action in self.document_actions:
             action.setEnabled(active and (editable or bool(action.property('view'))))
         self.unlock_action.setEnabled(active and self.session.readonly)
-        self.save_action.setEnabled(editable and self.session.dirty)
+        draft=False
+        if self.inline_text:
+            box=self.inline_text
+            draft=(box.editor.toPlainText()!=box.original_text or box.rect!=box.original_rect or getattr(box,'format_modified',False)) if hasattr(box,'pdf_object') else bool(box.editor.toPlainText().strip())
+        self.save_action.setEnabled(editable and (self.session.dirty or draft))
         self.capture_signature_action.setEnabled(editable and bool(self.drawn_signature_strokes) and self.drawn_signature_page==(id(self.session),self.page_index))
         self.pages.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove if editable else QAbstractItemView.DragDropMode.NoDragDrop)
         if active:
@@ -1016,11 +1089,13 @@ class Window(QMainWindow):
         self.copy_action.setEnabled(active and self.session.copy_allowed and bool(self.canvas.selected_text))
         self.clear_selection_action.setEnabled(active and bool(self.canvas.selected_text))
         if active:
-            star = ' *' if self.session.dirty else ''
+            star = ' *' if self.session.dirty or draft else ''
             security_label = ' · ' + t('Read-only') if self.session.readonly else ''
             self.setWindowTitle(f'{Path(self.session.path).name}{star}{security_label} · Paperlight')
 
     def confirm_discard(self):
+        if not self.commit_inline_text():
+            return False
         if self.session and self.session.dirty:
             answer = QMessageBox.question(self,t('Unsaved changes'),t('Save changes to this document before continuing?'),
                 QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
@@ -1050,6 +1125,7 @@ class Window(QMainWindow):
             self.error(exc)
             return
         self.stop_index()
+        self.edit_controller.stop()
         if self.session:
             self.session.close()
         self.session = candidate
@@ -1159,6 +1235,9 @@ class Window(QMainWindow):
             self.error(exc)
         finally:
             self.rendering = False
+            self.position_inline_text()
+            if self.canvas.mode=='edit':self.page_object_key=None
+            self.update_page_objects()
 
     def set_page_mode(self, mode):
         self.continuous = mode == 'continuous'
@@ -1185,6 +1264,8 @@ class Window(QMainWindow):
             QTimer.singleShot(0,lambda:self.render(self.continuous))
 
     def go_page(self,n):
+        if n!=self.page_index and not self.commit_inline_text():
+            return
         if not self.session or not 0<=n<len(self.session.doc):
             return
         self.page_index=n
@@ -1193,6 +1274,7 @@ class Window(QMainWindow):
         self.pages.scrollToItem(self.pages.item(n))
         self.pages.blockSignals(False)
         self.render()
+        self.ensure_edit_ocr()
 
     def thumbnail_chosen(self,n):
         if not self.rebuilding and n>=0:
@@ -1209,6 +1291,9 @@ class Window(QMainWindow):
         self.render()
 
     def choose_tool(self,mode,prompt=True):
+        if not self.commit_inline_text():
+            self.tool_actions[self.canvas.mode].setChecked(True)
+            return
         if self.session and self.session.readonly and mode not in ('read', 'select'):
             return
         if mode=='draw' and self.canvas.mode!='draw':
@@ -1229,20 +1314,130 @@ class Window(QMainWindow):
         if mode=='select':
             self.canvas.setFocus()
         self.tool_actions[mode].setChecked(True)
-        if mode!='read':
-            self.markup_bar.show()
-            self.markup_toggle.setChecked(True)
         self.active_tool_label.setText(self.tool_actions[mode].text())
-        hints={'read':'Drag to pan. Use the page arrows or thumbnails to navigate.',
+        self.update_page_objects()
+        if mode=='edit': self.ensure_edit_ocr()
+        hints={'edit':'Click to select a text box, shape or image. Drag to move; drag a corner to resize. Double-click text to type. Only this page is analyzed.',
+               'read':'Drag text to select; drag blank space to pan.',
                'signature':"Drag a box to place your saved signature. Today's date is added if selected.",
                'select':'Drag across text to select. Ctrl+C copies. Double-click selects a word. Ctrl+A selects this page.',
                'draw':'Draw with the mouse. Use this tool for a handwritten signature.',
-               'text':'Drag a box where you want to type.',
+               'text':'Click to create a text box. Type on the page; use the three dots to format.',
                'correct':'Drag a box around the word or paragraph to replace. Scan pixels inside it will be removed.',
                'image':'Drag a box for the signature image.',
                'form':'Click an existing form field. Use Add text for a paper form.',
                'redact':'Drag over sensitive content, then choose Apply redactions.'}
         self.status.setText(t(hints[mode]))
+
+    def start_inline_text(self, point):
+        if not self.session or self.session.readonly or not self.commit_inline_text():
+            return
+        self.stop_index()
+        page=self.session.doc[self.page_index]
+        display_point=point*page.rotation_matrix
+        bounds=page.rect
+        width=min(260,bounds.x1-display_point.x)
+        height=min(100,bounds.y1-display_point.y)
+        if width<30 or height<25:
+            self.status.setText(t('Click farther from the page edge to add text.'))
+            return
+        catalog=self.session.font_catalog()
+        style=replace_style(catalog.style(self.page_index),rotation=page.rotation,anchor=None)
+        rect=fitz.Rect(display_point.x,display_point.y,display_point.x+width,display_point.y+height)*page.derotation_matrix
+        self.inline_text=InlineTextBox(self.canvas,rect,catalog,style)
+        self.inline_text.page_index=self.page_index
+        self.inline_text.commit_requested.connect(self.commit_inline_text)
+        self.inline_text.cancel_requested.connect(self.cancel_inline_text)
+        self.inline_text.editor.textChanged.connect(self.update_actions)
+        self.inline_text.draft_changed.connect(self.update_actions)
+        self.status.setText(t('Type on the page. Three dots: formatting. Done or Ctrl+Enter: apply. Escape: cancel.'))
+
+    def position_inline_text(self,*args):
+        if self.inline_text is not None:
+            self.inline_text.update_layout()
+
+    def cancel_inline_text(self):
+        box=self.inline_text
+        self.inline_text=None
+        self.canvas.text_draft_identity=None
+        if self.canvas.mode=='edit':self.canvas.apply_preview_transform(fitz.Identity)
+        if box:
+            box.hide()
+            box.deleteLater()
+        self.canvas.setFocus()
+        self.update_actions()
+
+    def commit_inline_text(self):
+        box=self.inline_text
+        if box is None:
+            return True
+        value=box.editor.toPlainText()
+        if hasattr(box,'pdf_object'):
+            obj=box.pdf_object
+            unchanged=(value==box.original_text and box.rect==box.original_rect and not getattr(box,'format_modified',False))
+            if unchanged:
+                self.cancel_inline_text();return True
+            self.inline_text=None
+            page_index=self.page_index;self.page_index=box.page_index
+            try:
+                from .richtext import layout
+                runs=layout(box) if box.rich and value else []
+                success=self.mutate(lambda:self.session.object_text(box.page_index,obj,box.rect,runs=runs,text=value,style=box.style),purge=obj.kind in ('text','ocr'),preserve=True,drop_rect=fitz.Rect(obj.rect))
+            except Exception as exc:
+                self.error(exc);success=False
+            self.page_index=page_index
+            if success:
+                self.canvas.text_draft_identity=None;box.hide();box.deleteLater();self.render(True)
+            else: self.inline_text=box;box.editor.setFocus();self.update_actions()
+            return success
+        if not value.strip():
+            self.cancel_inline_text()
+            return True
+        self.inline_text=None
+        # Commit on its original page even if continuous scrolling activated another.
+        page_index=self.page_index
+        self.page_index=box.page_index
+        success=self.mutate(lambda:self.session.text(box.page_index,box.rect,value,replace=box.replacement,style=box.style),purge=box.replacement,preserve=True,drop_rect=box.rect if box.replacement else None)
+        self.page_index=page_index
+        if success:
+            box.hide()
+            box.deleteLater()
+            self.render(True)
+        else:
+            self.inline_text=box
+            box.editor.setFocus()
+        return success
+
+    def recognize_document(self):
+        self.start_index(True,apply_ocr=True)
+
+    def apply_recognized_text(self):
+        if not self.session:
+            return
+        if self.session.readonly:
+            self.status.setText(t('OCR is selectable for reading. Unlock editing to add the text layer to this PDF.'))
+            return
+        records=self.records
+        converted=[]
+        def convert():
+            with self.session.operation('Recognize scan text'):
+                for n,row in sorted(records.items()):
+                    page=self.session.doc[n]
+                    native=[fitz.Rect(w[:4]) for w in page.get_text('words')]
+                    words=[w for w in row['words'] if w.get('source')=='ocr' and not any(
+                        (fitz.Rect(w['rect']) & r).get_area()>fitz.Rect(w['rect']).get_area()*.45 for r in native)]
+                    if words:
+                        insert_ocr_words(page,words)
+                        converted.append(n)
+        if not any(w.get('source')=='ocr' for row in records.values() for w in row['words']):
+            self.status.setText(t('No new scan text found. Existing text remains selectable; unreadable scans may need another OCR pass.'))
+            return
+        if self.mutate(convert):
+            self.records={n:dict(page=n,words=word_rows(self.session.doc[n]),ocr=False,complete=row['complete']) for n,row in records.items()}
+            self.ocr_complete=all(row['complete'] for row in self.records.values())
+            self.render(True)
+            self.begin_search()
+            self.status.setText(t('OCR text added. Select or copy it, or use Correct text to replace scan text. Save to keep the text layer.'))
 
     def manage_signatures(self,initial_signature=None):
         dialog = SignatureDialog(self,self.signature_store,self.language_manager.settings,initial_signature=initial_signature)
@@ -1262,7 +1457,7 @@ class Window(QMainWindow):
     def selection_updated(self,text):
         self.copy_action.setEnabled(bool(text) and bool(self.session) and self.session.copy_allowed)
         self.clear_selection_action.setEnabled(bool(text))
-        if self.canvas.mode=='select':
+        if self.canvas.mode in ('read','select'):
             if text:
                 self.status.setText(t(f'{len(text)} characters selected · Ctrl+C to copy'))
             elif not self.canvas.text_model.units:
@@ -1286,11 +1481,6 @@ class Window(QMainWindow):
         menu.addActions([self.copy_action,self.select_all_action,self.clear_selection_action])
         menu.exec(position)
 
-    def toggle_markup(self,visible):
-        self.markup_bar.setVisible(visible)
-        if not visible:
-            self.choose_tool('read')
-
     def pick_color(self):
         color=QColorDialog.getColor(self.canvas.pen_color,self,t('Ink color'))
         if color.isValid():
@@ -1298,6 +1488,10 @@ class Window(QMainWindow):
             self.color_button.setStyleSheet(f'color:{color.name()};font-weight:600;')
 
     def mutate(self,fn,pages_changed=False, purge=False, preserve=False, drop_rect=None):
+        if self.edit_controller.busy:self.edit_controller.stop()
+        self.canvas.clear_edit_preview()
+        if not self.commit_inline_text():
+            return False
         self.stop_index()
         previous=self.records
         old_complete=self.ocr_complete
@@ -1350,26 +1544,26 @@ class Window(QMainWindow):
         elif mode=='redact':
             self.mutate(lambda:self.session.mark_redaction(self.page_index,data))
             self.status.setText(t('Redaction marked. Apply redactions before saving, or Undo to remove the mark.'))
-        elif mode in ('text','correct'):
-            old=''
-            if mode=='correct':
-                old=self.session.doc[self.page_index].get_textbox(data)
-                if not old.strip() and self.page_index in self.records:
-                    old=' '.join(w['text'] for w in self.records[self.page_index]['words']
-                                 if fitz.Rect(w['rect']).intersects(data))
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-            try:
-                catalog=self.session.font_catalog()
-                style=catalog.style(self.page_index,data if mode=='correct' else None)
-            finally:
-                QApplication.restoreOverrideCursor()
-            dialog=TextDialog(self,old,'Correct text' if mode=='correct' else 'Add text',catalog,style)
-            if dialog.exec()==QDialog.DialogCode.Accepted:
-                value=dialog.editor.toPlainText()
-                if value.strip():
-                    self.mutate(lambda:self.session.text(self.page_index,data,value,replace=mode=='correct',style=dialog.selected_style()),
-                                purge=mode=='correct',preserve=True,drop_rect=data if mode=='correct' else None)
-            self.render(True)
+        elif mode=='correct':
+            if not self.commit_inline_text():
+                return
+            old=self.session.doc[self.page_index].get_textbox(data)
+            words=[w for w in self.records.get(self.page_index,{}).get('words',[]) if fitz.Rect(w['rect']).intersects(data)]
+            if not old.strip():
+                old=' '.join(w['text'] for w in words)
+            self.stop_index()
+            catalog=self.session.font_catalog()
+            style=catalog.style(self.page_index,data)
+            if not style.matched and words:
+                import statistics
+                size=max(3,min(50,statistics.median(fitz.Rect(w['rect']).height for w in words)*.78))
+                style=replace_style(style,size=size,line_height=size*1.2)
+            self.inline_text=InlineTextBox(self.canvas,data,catalog,style,old,replacement=True)
+            self.inline_text.page_index=self.page_index
+            self.inline_text.commit_requested.connect(self.commit_inline_text)
+            self.inline_text.cancel_requested.connect(self.cancel_inline_text)
+            self.inline_text.editor.textChanged.connect(self.update_actions)
+            self.inline_text.draft_changed.connect(self.update_actions)
 
     def fill_form(self,point):
         if not self.session:
@@ -1395,7 +1589,7 @@ class Window(QMainWindow):
                 xref=widget.xref
                 self.mutate(lambda:self.session.fill(self.page_index,xref,value),preserve=True)
             return
-        self.status.setText(t('No interactive field here. Choose Add text and draw a box to type on this page.'))
+        self.status.setText(t('No interactive field here. Choose Add text and click on the page to type.'))
 
     def remove_annotation(self,point):
         if not self.session:
@@ -1509,6 +1703,8 @@ class Window(QMainWindow):
         return path
 
     def save_copy(self):
+        if not self.commit_inline_text():
+            return False
         if not self.session:
             return False
         try:
@@ -1533,6 +1729,8 @@ class Window(QMainWindow):
             return False
 
     def save_current(self):
+        if not self.commit_inline_text():
+            return False
         if not self.session:
             return False
         try:
@@ -1557,6 +1755,8 @@ class Window(QMainWindow):
             return False
 
     def protect_pdf(self):
+        if not self.commit_inline_text():
+            return False
         if not self.session:
             return
         try:
@@ -1601,6 +1801,8 @@ class Window(QMainWindow):
             self.error(exc)
 
     def export_searchable(self):
+        if not self.commit_inline_text():
+            return
         if not self.session:
             return
         try:
@@ -1619,7 +1821,7 @@ class Window(QMainWindow):
                 with fitz.open(stream=self.session.doc.tobytes(),filetype='pdf') as output:
                     for n,row in self.records.items():
                         insert_ocr_words(output[n],row['words'])
-                    atomic_pdf_write(output,path,sanitize=self.session.redaction_applied)
+                    atomic_pdf_write(output,path,sanitize=self.session.redaction_applied,clean_content=self.session.native_object_edited)
             finally:
                 QApplication.restoreOverrideCursor()
             self.status.setText(t(f'Exported searchable copy: {Path(path).name}'))
@@ -1657,10 +1859,13 @@ class Window(QMainWindow):
         self.stop_index()
         self.status.setText(t('Recognition timed out. Completed pages remain available.'))
 
-    def start_index(self,ocr=True):
+    def start_index(self,ocr=True,apply_ocr=False,pages=None):
         if not self.session:
             return
+        if not self.commit_inline_text():
+            return
         self.stop_index()
+        self.ocr_apply_requested=apply_ocr
         seed=self.records
         self.records={}
         self.search_hits=[]
@@ -1694,7 +1899,7 @@ class Window(QMainWindow):
             if not job.waitForStarted(5000):
                 raise ValueError('Could not start the OCR process.')
             cache_root = self.session_cache_root()
-            config=dict(path=path,cache_root=str(cache_root),password=password,ocr=ocr,seed=seed)
+            config=dict(path=path,cache_root=str(cache_root),password=password,ocr=ocr,seed=seed,pages=pages)
             job.write((json.dumps(config)+'\n').encode())
             job.closeWriteChannel()
             self.job_watchdog.start(90000)
@@ -1797,6 +2002,10 @@ class Window(QMainWindow):
         if code!=0 and not self.job_failed:
             self.status.setText(t('Recognition stopped unexpectedly. Text indexed so far is available.'))
         self.update_actions()
+        if code==0 and self.ocr_apply_requested and not self.job_failed:
+            self.ocr_apply_requested=False
+            self.apply_recognized_text()
+        self.ensure_edit_ocr()
 
     def remove_job_temp(self):
         if self.job_temp:
@@ -1903,12 +2112,12 @@ class Window(QMainWindow):
     def guide(self):
         QMessageBox.information(self,t('Quick guide'),
             t('OPEN & READ\nOpen or drop a PDF. Use thumbnails or Alt+Left / Alt+Right. Ctrl+wheel zooms; Ctrl+0 fits the page.\n\n'
-            'SELECT TEXT\nMarkup > Select text, or Ctrl+Shift+T. Drag across text, double-click a word, '
+            'SELECT TEXT\nThe read cursor selects text automatically. Drag across text, double-click a word, '
             'or Ctrl+A for the current page. Ctrl+C copies; Escape clears. Recognize text first for scans.\n\n'
             'SEARCH\nCtrl+F finds existing text immediately. Recognize text runs English + Simplified/Traditional Chinese OCR offline. '
             'The first OCR pass takes time. Search caches are encrypted and session-only by default; Tools can enable reuse between sessions. Stop OCR preserves completed pages. '
-            'File > Export searchable copy adds the recognized text to a PDF for other readers.\n\n'
-            'EDIT\nDraw / sign writes with your mouse. Add text and Correct text use a rectangle you drag. '
+            'Recognize text adds a selectable text layer to the current PDF. Save to keep it; Correct text replaces scan text.\n\n'
+            'EDIT\nDraw / sign writes with your mouse. Click with Add text to type live on the page. Use the three-dot button to format, Done or Ctrl+Enter to apply, and Escape to cancel. All editing tools are visible on the toolbar. Drag a rectangle with Correct text to edit it on the page. '
             'Correct text removes the original contents inside that rectangle; it does not reflow surrounding paragraphs. '
             'Signature image places a PNG/JPEG in a rectangle. Fill form edits existing text, checkbox and choice fields. '
             'Right-click an annotation to remove it. Ctrl+Z / Ctrl+Y undo and redo.\n\n'
@@ -1922,7 +2131,7 @@ class Window(QMainWindow):
 
     def about(self):
         QMessageBox.information(self,t('About Paperlight'),
-            t('Paperlight 0.8\nAn offline PDF workspace for Windows.\n\n'
+            t('Paperlight 1.0.0\nAn offline PDF workspace for Windows.\n\n'
             'Built with PySide6 / Qt, PyMuPDF / MuPDF, and Tesseract. '
             'This source project is distributed under AGPL-3.0-or-later. '
             'Third-party notices are included with the application.\n\n'
@@ -1933,6 +2142,7 @@ class Window(QMainWindow):
             event.ignore()
             return
         self.stop_index()
+        self.edit_controller.stop()
         if self.session:
             self.session.close()
             self.session=None

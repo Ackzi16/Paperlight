@@ -38,7 +38,7 @@ def paint_symbol(p,name,color='#55575c'):
         if name=='plus':line(12,6,12,18)
     elif name=='fit':
         rect(6,3,12,18);line(2,8,2,16);line(22,8,22,16)
-    elif name in ('draw','markup','correct'):
+    elif name in ('edit','draw','markup','correct'):
         path=QPainterPath(QPointF(5,18));path.lineTo(7,12);path.lineTo(17,3);path.lineTo(21,7);path.lineTo(11,17);path.closeSubpath();p.drawPath(path);line(15,5,19,9);line(5,18,10,17)
         if name=='correct':line(4,22,19,22)
     elif name=='text':
@@ -80,6 +80,7 @@ def icon(name):
 
 
 def tool_cursor(mode):
+    if mode=='edit':return QCursor(Qt.CursorShape.ArrowCursor)
     if mode=='read':return QCursor(Qt.CursorShape.OpenHandCursor)
     if mode in ('text','select'):return QCursor(Qt.CursorShape.IBeamCursor)
     if mode=='form':return QCursor(Qt.CursorShape.PointingHandCursor)
@@ -113,7 +114,7 @@ QPushButton:hover {background:#eeeef2;}
 QPushButton:checked {background:#e0eafa;color:#1265ca;border-color:#c6dafa;}
 QPushButton#primary {background:#1671e7; border-color:#1264d4; color:white; font-weight:600;}
 QPushButton#primary:hover {background:#1264cf;}
-QLineEdit,QSpinBox,QDoubleSpinBox,QComboBox,QPlainTextEdit {background:#fff; border:1px solid #d7d7df; border-radius:5px; padding:5px 7px; selection-background-color:#bdd8fc;}
+QLineEdit,QSpinBox,QDoubleSpinBox,QComboBox,QPlainTextEdit {background:#fff; border:1px solid #d7d7df; border-radius:5px; padding:5px 7px; selection-background-color:#bdd8fc; selection-color:#15171b;}
 QLineEdit:focus,QPlainTextEdit:focus {border-color:#6faaf3;}
 QSpinBox::up-button,QSpinBox::down-button,QDoubleSpinBox::up-button,QDoubleSpinBox::down-button {width:0; border:0;}
 QComboBox::drop-down {border:0; width:24px;}

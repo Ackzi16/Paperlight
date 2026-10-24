@@ -65,7 +65,7 @@ def verify_redacted_text(page, regions):
 
 
 def atomic_pdf_write(doc: fitz.Document, destination: str, *, sanitize=False, protection: Protection | None = None,
-                     keep_encryption=False, password='', expected_version=None, snapshot_path=None):
+                     keep_encryption=False, password='', expected_version=None, snapshot_path=None,clean_content=False):
     """Write beside destination, then replace atomically; never leave a partial PDF."""
     if keep_encryption and protection:
         raise ValueError('Choose either existing protection or new protection.')
@@ -93,7 +93,7 @@ def atomic_pdf_write(doc: fitz.Document, destination: str, *, sanitize=False, pr
                             remove_links=False, reset_fields=False, reset_responses=True,
                             thumbnails=True, xml_metadata=True)
                 clean.set_toc([])
-            clean.save(temporary, garbage=4, deflate=True, clean=sanitize, **options)
+            clean.save(temporary, garbage=4, deflate=True, clean=sanitize or clean_content, **options)
         with fitz.open(temporary) as check:
             if protection and not check.authenticate(protection.owner_password) & 4:
                 raise ValueError('Protected PDF verification failed.')
@@ -159,6 +159,7 @@ class PdfSession:
         self._revision = 0
         self.saved_position = 0
         self.redaction_applied = False
+        self.native_object_edited = False
         self._pending_count = None
 
     @property
@@ -263,7 +264,7 @@ class PdfSession:
         with fitz.open() as output:
             for p in pages:
                 output.insert_pdf(self.doc, from_page=p, to_page=p, widgets=True)
-            atomic_pdf_write(output, destination, sanitize=self.redaction_applied)
+            atomic_pdf_write(output, destination, sanitize=self.redaction_applied,clean_content=self.native_object_edited)
 
     def ink(self, index, points, color=(0.12, .32, .8), width=2):
         if len(points) < 2:
@@ -343,6 +344,44 @@ class PdfSession:
         if replace:
             self.redaction_applied = True
 
+    def edit_object(self,index,obj,**options):
+        from .objects import edit_graphic,validate
+        with self.operation('Edit PDF object'):
+            page=self.doc[index]
+            if obj.kind=='annotation':
+                validate(page,obj)
+                annot=page.load_annot(obj.xref)
+                if options.get('delete'): page.delete_annot(annot)
+                elif options.get('rect') is not None:
+                    annot.set_rect(options['rect']);annot.update()
+            else: edit_graphic(page,obj,**options)
+        self.native_object_edited=True
+
+    def object_text(self,index,obj,rect,runs=None,text=None,style=None):
+        from .objects import erase_native_text,validate
+        from .richtext import insert
+        if self.pending_redactions(): raise ValueError('Apply or undo pending redactions before editing text.')
+        with self.operation('Edit PDF text box'):
+            page=self.doc[index];validate(page,obj)
+            if obj.kind=='annotation':
+                annot=page.load_annot(obj.xref)
+                annot.set_info(content=text or '')
+                annot.set_rect(rect)
+                annot.update(fontsize=style.size,text_color=style.color)
+            elif obj.kind=='ocr':
+                page.add_redact_annot(obj.rect,fill=(1,1,1),cross_out=False)
+                page.apply_redactions(images=2,graphics=0,text=0)
+                verify_redacted_text(page,[fitz.Rect(obj.rect)])
+                if text: insert_styled_text(page,rect,text,style)
+            else:
+                from .objects import validate_text_target
+                validate_text_target(page,obj,rect)
+                page=erase_native_text(page,obj)
+                verify_redacted_text(page,[fitz.Rect(obj.rect)])
+                if runs: insert(page,fitz.Rect(rect),runs)
+        if obj.kind=='ocr': self.redaction_applied=True
+        elif obj.kind=='text': self.native_object_edited=True
+
     def mark_redaction(self, index, rect):
         with self.operation('Mark redaction'):
             self.doc[index].add_redact_annot(rect, fill=(0, 0, 0), cross_out=True)
@@ -413,7 +452,7 @@ class PdfSession:
             raise ValueError('Choose a different filename to preserve the original PDF.')
         if self.pending_redactions():
             raise ValueError('Apply or undo the pending redactions before saving.')
-        atomic_pdf_write(self.doc, destination, sanitize=self.redaction_applied, protection=protection,
+        atomic_pdf_write(self.doc, destination, sanitize=self.redaction_applied, protection=protection,clean_content=self.native_object_edited,
                          snapshot_path=self._working,password=self._working_password)
         # Exporting a copy does not save the active source document.
 
@@ -421,7 +460,7 @@ class PdfSession:
         self.require_edit()
         if self.pending_redactions():
             raise ValueError('Apply or undo the pending redactions before saving.')
-        atomic_pdf_write(self.doc,self.path,sanitize=self.redaction_applied,
+        atomic_pdf_write(self.doc,self.path,sanitize=self.redaction_applied,clean_content=self.native_object_edited,
                          keep_encryption=self.encrypted,password=self._working_password,
                          expected_version=self._source_version,snapshot_path=self._working)
         self._source_version = file_version(self.path)
@@ -435,6 +474,7 @@ class PdfSession:
 def insert_ocr_words(page, words):
     """Add an invisible search layer without replacing page content or forms."""
     page.insert_font(fontname='china-s')
+    font = fitz.Font('china-s')
     for word in words:
         if word.get('source') != 'ocr' or not word['text'].strip():
             continue
@@ -442,7 +482,6 @@ def insert_ocr_words(page, words):
         size = max(3, min(50, rect.height * .78))
         text = word['text']
         # Match word width as closely as possible; embedded CJK font handles Chinese.
-        font = fitz.Font('china-s')
         width = font.text_length(text, fontsize=size)
         if width > rect.width and width > 0:
             size *= rect.width / width

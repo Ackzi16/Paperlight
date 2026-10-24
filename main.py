@@ -31,6 +31,10 @@ def attach_worker_pipes():
 
 
 def entry():
+    if '--edit-worker' in sys.argv:
+        attach_worker_pipes()
+        from paperlight.edit_worker import main
+        return main()
     if '--index' in sys.argv:
         attach_worker_pipes()
         from paperlight.worker import main

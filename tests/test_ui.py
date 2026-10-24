@@ -60,13 +60,10 @@ def test_open_search_rotation_and_markup(app,source,tmp_path):
     QTest.mouseMove(window.canvas.viewport(),end,delay=10)
     QTest.mouseRelease(window.canvas.viewport(),Qt.MouseButton.LeftButton,pos=end)
     assert len(list(window.session.doc[0].annots()))==1
-    def accept_text():
-        dialog=QApplication.activeModalWidget()
-        assert isinstance(dialog,TextDialog)
-        dialog.editor.setPlainText('A short note 中文')
-        dialog.accept()
-    QTimer.singleShot(40,accept_text)
-    window.handle_gesture('text',fitz.Rect(55,400,400,450))
+    window.choose_tool('text')
+    window.start_inline_text(fitz.Point(55,400))
+    window.inline_text.editor.setPlainText('A short note 中文')
+    assert window.commit_inline_text()
     assert 'short note' in window.session.doc[0].get_text()
     window.start_index(False)
     wait_for(lambda:window.job is None)
@@ -108,7 +105,8 @@ def test_tool_cursors_font_picker_and_compact_toolbar(app,source,tmp_path):
     wait_for(lambda:window.job is None)
     assert not window.markup_bar.isVisible()
     window.choose_tool('text')
-    assert window.markup_bar.isVisible()
+    assert window.basic_bar.isVisible()
+    assert not window.markup_bar.isVisible()
     assert window.canvas.cursor().shape()==Qt.CursorShape.IBeamCursor
     window.choose_tool('draw')
     assert window.canvas.cursor().shape()==Qt.CursorShape.BitmapCursor

@@ -1,0 +1,45 @@
+{
+  "sample": "Synthetic mixed English / Simplified Chinese / Traditional Chinese scan, 160 dpi, CPU",
+  "tesseract": {
+    "seconds": [
+      0.34577399998670444,
+      0.34086029999889433,
+      0.3338198999990709
+    ],
+    "texts": [
+      "SEARCHABLE SCANNED INVOICE\nAccount number OCEAN 4826\n中文文件测试\n发票\n中文文件測試\n發票\n",
+      "SEARCHABLE SCANNED INVOICE\nAccount number OCEAN 4826\n中文文件测试\n发票\n中文文件測試\n發票\n",
+      "SEARCHABLE SCANNED INVOICE\nAccount number OCEAN 4826\n中文文件测试\n发票\n中文文件測試\n發票\n"
+    ],
+    "render_seconds": 0.03892659995472059
+  },
+  "rapidocr": {
+    "initialization_seconds": 0.018347900011576712,
+    "seconds": [
+      1.9356983000179753,
+      0.8177105999784544,
+      0.8189487000345252
+    ],
+    "texts": [
+      [
+        "SEARCHABLE SCANNED INVOICE",
+        "Account number OCEAN 4826",
+        "中文文件测试发票",
+        "中文文件測試發票"
+      ],
+      [
+        "SEARCHABLE SCANNED INVOICE",
+        "Account number OCEAN 4826",
+        "中文文件测试发票",
+        "中文文件測試發票"
+      ],
+      [
+        "SEARCHABLE SCANNED INVOICE",
+        "Account number OCEAN 4826",
+        "中文文件测试发票",
+        "中文文件測試發票"
+      ]
+    ]
+  },
+  "decision": "Retain Tesseract; RapidOCR tested separately, not bundled. Single-page sample does not establish broad accuracy or large-document throughput."
+}

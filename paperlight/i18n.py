@@ -7,6 +7,70 @@ from PySide6.QtWidgets import QApplication
 
 
 STRINGS={
+    'Rotate object':'旋转对象',
+    'Rotate object…':'旋转对象…',
+    'Angle in degrees':'角度',
+    'Edit points':'编辑节点',
+    'This path has too many points for direct editing.':'此路径的节点过多，无法直接编辑。',
+    'Drag anchors or curve handles. Shift constrains movement. Escape cancels a gesture.':'拖动节点或曲线控制点。按住 Shift 限制移动方向，按 Escape 取消本次操作。',
+    'Drag to move. Drag a corner to resize or the round handle above to rotate. Right-click for Edit points and an exact angle.':'拖动以移动，拖动角点以调整大小，拖动上方圆点以旋转。右键可编辑节点或输入精确角度。',
+    'Edit preview timed out. Reading remains available.':'编辑预览超时，仍可阅读文档。',
+    'The edit preview could not be prepared.':'无法生成编辑预览。',
+
+    'Identical overlapping text cannot be edited separately.':'无法单独编辑位置相同的重叠文字。',
+    'This shared graphic is too complex for text editing.':'此共享图形过于复杂，无法进行文字编辑。',
+    'This shared graphic uses an unsupported resource name.':'此共享图形使用不支持的资源名称。',
+    'This shared graphic has recursive resources.':'此共享图形包含递归资源，无法编辑。',
+
+    'Move text box':'移动文本框',
+    'This text box would overlap other text. Move or resize it first.':'此文本框会与其他文字重叠，请先移动或调整大小。',
+    'Edit PDF':'编辑 PDF',
+    'Resize':'调整大小',
+    'Text box':'文本框',
+    'Rectangle':'矩形',
+    'Ellipse':'椭圆',
+    'Line':'直线',
+    'Graphic':'图形',
+    'Image':'图像',
+    'Recognized text':'已识别文字',
+    'Edit text':'编辑文字',
+    'Delete object':'删除对象',
+    'Stroke color':'描边颜色',
+    'Fill color':'填充颜色',
+    'Click to select a text box, shape or image. Drag to move; drag a corner to resize. Double-click text to type. Only this page is analyzed.':'单击选择文本框、形状或图像，拖动以移动，拖动角点以调整大小。双击文字即可输入。仅分析当前页。',
+    'Drag to move; drag a corner to resize. Right-click for appearance or Delete. Alt+click cycles overlapping objects.':'拖动以移动，拖动角点以调整大小。右键设置外观或删除。Alt+单击可切换重叠对象。',
+    'Rotate this page upright before editing this text box.':'请先将此页旋转至正向，再编辑此文本框。',
+    'Edit this text box directly. Resize changes wrapping. Three dots changes formatting. Ctrl+Enter applies; Escape cancels.':'直接编辑此文本框。调整大小会改变换行，三点按钮可设置格式。Ctrl+Enter 应用，Escape 取消。',
+    'This page is too complex for object editing.':'此页过于复杂，无法进行对象编辑。',
+    'This annotation type uses its original markup tool.':'请使用原有标注工具编辑此类型的批注。',
+    'This graphic has clipping, shared resources or a complex content stream.':'此图形包含裁切、共享资源或复杂内容流，暂不支持直接编辑。',
+    'The page changed. Select the object again.':'页面已更改，请重新选择对象。',
+    'This object cannot be changed by the graphic editor.':'图形编辑器无法修改此对象。',
+    'The object source could not be verified.':'无法验证对象源数据。',
+    'Invalid object dimensions.':'对象尺寸无效。',
+    'Invalid object color.':'对象颜色无效。',
+    'Invalid stroke width.':'描边宽度无效。',
+    'This object has a singular transform.':'此对象的变换不可逆，无法编辑。',
+    'Overlapping text needs a smaller correction area.':'存在重叠文字，请缩小修改区域。',
+    'The text does not fit. Resize the text box or reduce the font size.':'文字无法放入，请调整文本框大小或减小字号。',
+    'Apply or undo pending redactions before editing text.':'请先应用或撤销待处理的隐去标记，再编辑文字。',
+    'Invalid recognition page range.':'识别页码范围无效。',
+
+    'More tools':'更多工具',
+    'Edit':'编辑',
+    'Text formatting':'文本格式',
+    'Done':'完成',
+    'Font':'字体',
+    'Size':'字号',
+    'Drag text to select; drag blank space to pan.':'拖动文字以选择，拖动空白处以平移。',
+    'Click to create a text box. Type on the page; use the three dots to format.':'单击创建文本框，在页面上输入，点击三点按钮调整格式。',
+    'Click farther from the page edge to add text.':'请在离页面边缘稍远的位置单击以添加文本。',
+    'Type on the page. Three dots: formatting. Done or Ctrl+Enter: apply. Escape: cancel.':'在页面上输入。三点按钮：格式；完成或 Ctrl+Enter：应用；Escape：取消。',
+    'OCR is selectable for reading. Unlock editing to add the text layer to this PDF.':'OCR 文字可供选择和阅读。请解锁编辑以向 PDF 添加文字层。',
+    'No new scan text found. Existing text remains selectable; unreadable scans may need another OCR pass.':'未找到新的扫描文字。现有 PDF 文字已可选择。',
+    'OCR text added. Select or copy it, or use Correct text to replace scan text. Save to keep the text layer.':'已添加 OCR 文字。可以选择、复制，或使用“更正文字”替换扫描文字。保存以保留文字层。',
+    'No interactive field here. Choose Add text and click on the page to type.':'此处没有交互表单字段。请选择“添加文字”并单击页面输入。',
+
     'Invalid recognition data. The worker was stopped.':'识别数据无效，已停止识别进程。',
     'Old search caches could not be removed. Clear local search cache before processing sensitive documents.':'无法移除旧搜索缓存。处理敏感文档前，请先清除本地搜索缓存。',
     'Session-only by default. Enable to reuse encrypted indexes between sessions. Password-protected PDFs always use session-only indexes.':'默认仅在当前会话保留。启用后可跨会话复用加密索引。受密码保护的 PDF 始终仅使用会话索引。',
@@ -182,12 +246,12 @@ TEMPLATES={
 
 GUIDE_EN=(
     'OPEN & READ\nOpen or drop a PDF. Use thumbnails or Alt+Left / Alt+Right. Ctrl+wheel zooms; Ctrl+0 fits the page.\n\n'
-    'SELECT TEXT\nMarkup > Select text, or Ctrl+Shift+T. Drag across text, double-click a word, '
+    'SELECT TEXT\nThe read cursor selects text automatically. Drag across text, double-click a word, '
     'or Ctrl+A for the current page. Ctrl+C copies; Escape clears. Recognize text first for scans.\n\n'
     'SEARCH\nCtrl+F finds existing text immediately. Recognize text runs English + Simplified/Traditional Chinese OCR offline. '
     'The first OCR pass takes time. Search caches are encrypted and session-only by default; Tools can enable reuse between sessions. Stop OCR preserves completed pages. '
-    'File > Export searchable copy adds the recognized text to a PDF for other readers.\n\n'
-    'EDIT\nDraw / sign writes with your mouse. Add text and Correct text use a rectangle you drag. '
+    'Recognize text adds a selectable text layer to the current PDF. Save to keep it; Correct text replaces scan text.\n\n'
+    'EDIT\nDraw / sign writes with your mouse. Click with Add text to type live on the page. Use the three-dot button to format, Done or Ctrl+Enter to apply, and Escape to cancel. All editing tools are visible on the toolbar. Drag a rectangle with Correct text to edit it on the page. '
     'Correct text removes the original contents inside that rectangle; it does not reflow surrounding paragraphs. '
     'Signature image places a PNG/JPEG in a rectangle. Fill form edits existing text, checkbox and choice fields. '
     'Right-click an annotation to remove it. Ctrl+Z / Ctrl+Y undo and redo.\n\n'
@@ -200,19 +264,19 @@ GUIDE_EN=(
     'Save preserves existing password protection. Use File > Protect PDF to create a copy with new protection. Save copy creates an unencrypted edited copy after owner unlock.')
 STRINGS[GUIDE_EN]=(
     '打开与阅读\n打开 PDF 或将其拖入窗口。使用缩略图或 Alt+Left / Alt+Right 翻页。Ctrl+滚轮缩放，Ctrl+0 适合页面。\n\n'
-    '选择文本\n标注 > 选择文本，或 Ctrl+Shift+T。拖动选择文本，双击选择单词，Ctrl+A 选择本页。Ctrl+C 复制，Esc 取消选择。扫描件请先识别文本。\n\n'
-    '搜索\nCtrl+F 可立即搜索已有文本。“识别文本”支持离线英语、简体中文和繁体中文 OCR。首次识别需要时间。搜索缓存已加密，默认仅在当前会话保留；可通过“工具”启用跨会话复用。停止识别会保留已完成的页面。“文件 > 导出可搜索副本”可将识别结果写入 PDF，供其他阅读器使用。\n\n'
-    '编辑\n“绘制／签名”支持鼠标书写。“添加文本”和“修改文本”通过拖出矩形区域操作。修改文本会移除框内原有内容，不会重排周围段落。“签名图片”可放置 PNG/JPEG。“填写表单”支持文本、复选框和选项字段。右键点击批注可移除，Ctrl+Z / Ctrl+Y 撤销或重做。\n\n'
+    '选择文本\n阅读光标会自动选择文本。拖动选择文本，双击选择单词，Ctrl+A 选择本页。Ctrl+C 复制，Esc 取消选择。扫描件请先识别文本。\n\n'
+    '搜索\nCtrl+F 可立即搜索已有文本。“识别文本”支持离线英语、简体中文和繁体中文 OCR。首次识别需要时间。搜索缓存已加密，默认仅在当前会话保留；可通过“工具”启用跨会话复用。停止识别会保留已完成的页面。“识别文本”会向当前 PDF 添加可选择的文字层，保存即可保留。使用“更正文字”替换扫描文字。\n\n'
+    '编辑\n“绘制／签名”支持鼠标书写。使用“添加文字”单击页面即可实时输入，三点按钮设置格式，完成或 Ctrl+Enter 应用，Escape 取消。所有编辑工具均显示在工具栏中。使用“更正文字”拖出区域即可就地编辑。修改文本会移除框内原有内容，不会重排周围段落。“签名图片”可放置 PNG/JPEG。“填写表单”支持文本、复选框和选项字段。右键点击批注可移除，Ctrl+Z / Ctrl+Y 撤销或重做。\n\n'
     '页面\n拖动缩略图可调整顺序，也可使用“页面”菜单。按住 Ctrl/Shift 可多选。“提取／拆分”将指定页面另存为 PDF。“插入／合并”在当前页后插入另一个 PDF。\n\n'
     '隐去与保存\n标记敏感区域后，选择“应用隐去”。Ctrl+S 保存当前文档；另存副本会保留原文件。隐去后的导出文件将移除无用对象和元数据。应用隐去或修改文本时，会清除当前会话对应的搜索缓存。“工具 > 清除本地搜索缓存”可移除全部识别缓存。\n\n'
     '识别准确率取决于扫描质量。编辑不会保留原有的证书签名。“保存”会保留原有密码保护。可通过“文件 > 保护 PDF”创建使用新保护设置的副本。所有者解锁后，“另存副本”会生成不加密的编辑副本。')
 
-ABOUT_EN=('Paperlight 0.8\nAn offline PDF workspace for Windows.\n\n'
+ABOUT_EN=('Paperlight 1.0.0\nAn offline PDF workspace for Windows.\n\n'
           'Built with PySide6 / Qt, PyMuPDF / MuPDF, and Tesseract. '
           'This source project is distributed under AGPL-3.0-or-later. '
           'Third-party notices are included with the application.\n\n'
           'Preview workflow references: Apple documentation. REA diagnostics were run on Windows; no Mac Preview binary was inspected.')
-STRINGS[ABOUT_EN]=('Paperlight 0.8\n适用于 Windows 的离线 PDF 工作区。\n\n'
+STRINGS[ABOUT_EN]=('Paperlight 1.0.0\n适用于 Windows 的离线 PDF 工作区。\n\n'
                   '使用 PySide6 / Qt、PyMuPDF / MuPDF 和 Tesseract 构建。项目源代码以 AGPL-3.0-or-later 许可发布，应用中附有第三方声明。\n\n'
                   'Preview 工作流参考 Apple 官方文档。已在 Windows 上运行 REA 诊断，未检查 Mac Preview 的二进制程序。')
 

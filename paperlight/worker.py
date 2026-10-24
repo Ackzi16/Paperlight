@@ -67,7 +67,7 @@ def needs_ocr(page):
     return any(fitz.Rect(image['bbox']).get_area() / area > .18 for image in page.get_image_info())
 
 
-def index_document(path, cache_root, language='eng+chi_sim+chi_tra', password='', ocr=True, seed=None):
+def index_document(path, cache_root, language='eng+chi_sim+chi_tra', password='', ocr=True, seed=None, pages=None):
     started = time.perf_counter()
     key = cache_key(path, language)
     folder = Path(cache_root) / key
@@ -106,9 +106,13 @@ def index_document(path, cache_root, language='eng+chi_sim+chi_tra', password=''
                 pending.append(n)
         emit(dict(kind='native_done', pages=len(doc), pending=len(pending)))
         failures = []
+        wanted=set(range(len(doc))) if pages is None else set(pages)
+        if any(not isinstance(n,int) or isinstance(n,bool) or not 0<=n<len(doc) for n in wanted):
+            raise ValueError('Invalid recognition page range.')
+        selected=[n for n in pending if n in wanted]
         if ocr:
-            for position, n in enumerate(pending):
-                emit(dict(kind='progress', page=n, current=position + 1, total=len(pending)))
+            for position, n in enumerate(selected):
+                emit(dict(kind='progress', page=n, current=position + 1, total=len(selected)))
                 page = doc[n]
                 try:
                     pixels = page.rect.width*page.rect.height*(160/72)**2
@@ -130,7 +134,7 @@ def index_document(path, cache_root, language='eng+chi_sim+chi_tra', password=''
                     failures.append(n)
                     emit(dict(kind='warning', page=n, message=str(exc)))
         emit(dict(kind='done', seconds=round(time.perf_counter()-started, 3),
-                  pages=len(doc), failures=failures, pending=0 if ocr else len(pending)))
+                  pages=len(doc), failures=failures, pending=len(pending)-len(selected) if ocr else len(pending)))
 
 
 def store(path, row):
