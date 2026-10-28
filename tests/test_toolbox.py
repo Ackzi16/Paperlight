@@ -10,7 +10,7 @@ from paperlight.tool_engine import execute,transform,extract,csv_cell
 from paperlight.core import PdfSession
 from paperlight.security import Protection,access
 from paperlight.app import Window
-from paperlight.toolbox import ToolboxDialog
+from paperlight.toolbox import ToolboxDialog,validate_worker_message
 from .test_ui import app,wait_for
 
 @pytest.fixture
@@ -41,6 +41,39 @@ def job(tmp_path,source,key,options=None,**extras):
 
 def success(rows):
     assert rows[-1]['kind']=='done' and rows[-1]['failures']==0,rows
+
+
+@pytest.mark.parametrize('fail',[False,True])
+def test_staging_never_modifies_existing_files(tmp_path,utility_pdf,fail):
+    source=tmp_path/'result-0000.pdf';source.write_bytes(utility_pdf.read_bytes())
+    original=source.read_bytes();output=tmp_path/'export.pdf';rows=[]
+    if fail:output.write_bytes(b'Existing output')
+    execute(dict(tool='compress',inputs=[str(source)],outputs=[dict(path=str(output))],stage=str(tmp_path)),rows.append)
+    assert source.read_bytes()==original
+    assert rows[-1]['failures']==int(fail) and not list(tmp_path.glob('.job-*'))
+    if fail:assert output.read_bytes()==b'Existing output'
+    else:
+        with f.open(output) as doc:assert doc[0].search_for('ALPHA')
+
+
+@pytest.mark.parametrize('row',[
+    [],{},dict(kind='progress',current=1,total=0,message='x'),
+    dict(kind='progress',current=True,total=1,message='x'),
+    dict(kind='progress',current=1,total=1,message='x'*2049),
+    dict(kind='result',path='unrequested.pdf',bytes=10),
+    dict(kind='result',path='allowed.pdf',bytes=-1),
+    dict(kind='done',outputs=['unrequested.pdf'],failures=0),
+    dict(kind='done',outputs=[],failures=0),dict(kind='fatal',message=[]),
+])
+def test_worker_protocol_rejects_malformed_or_unrequested_output(row):
+    with pytest.raises(ValueError):validate_worker_message(row,{'allowed.pdf'},[])
+
+
+def test_worker_protocol_accepts_expected_results_and_rejects_duplicates():
+    result=dict(kind='result',path='allowed.pdf',bytes=42)
+    assert validate_worker_message(result,{'allowed.pdf'},[])==result
+    with pytest.raises(ValueError):validate_worker_message(result,{'allowed.pdf'},['allowed.pdf'])
+    validate_worker_message(dict(kind='done',outputs=['allowed.pdf'],failures=0),{'allowed.pdf'},['allowed.pdf'])
 
 @pytest.mark.parametrize('key',[t.key for t in TOOLS if t.workflow])
 def test_pdf_transformations_export_and_preserve_input(tmp_path,utility_pdf,key):

@@ -1,5 +1,5 @@
 """Bounded local PDF utilities. Invoked only by the isolated toolbox worker."""
-import csv,difflib,io,json,math,os,zipfile
+import csv,difflib,io,json,math,os,tempfile,zipfile
 from pathlib import Path
 import pymupdf as f
 from PIL import Image,ImageOps,ImageEnhance
@@ -307,7 +307,10 @@ def execute(config,emit=lambda row:None):
         options_for(item,step.get('options',{}))
     completed=[];failures=0
     for at,output in enumerate(outputs):
-        doc=None;temporary=stage/f'result-{at:04d}.{tool.output if not workflow else "pdf"}'
+        # Own a unique directory, even when a caller supplies an input directory
+        # as staging. Never overwrite or clean up a pre-existing staging file.
+        workspace=tempfile.TemporaryDirectory(prefix='.job-',dir=stage)
+        doc=None;temporary=Path(workspace.name)/('result.'+(tool.output if not workflow else 'pdf'))
         destination=Path(output['path']).resolve()
         try:
             if str(destination).casefold() in blocked:raise ValueError('Choose an output different from every input PDF.')
@@ -346,7 +349,7 @@ def execute(config,emit=lambda row:None):
             emit(dict(kind='error',file=at+1,message=message))
         finally:
             if doc is not None:doc.close()
-            temporary.unlink(missing_ok=True)
+            workspace.cleanup()
     emit(dict(kind='done',outputs=completed,failures=failures))
 
 SAFE_ERRORS={

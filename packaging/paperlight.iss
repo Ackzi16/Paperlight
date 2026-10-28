@@ -1,7 +1,7 @@
 [Setup]
 AppId={{BA4B931F-2D52-49D1-A8A0-A947807532D0}
 AppName=Paperlight
-AppVersion=1.1.0
+AppVersion=1.1.1
 AppPublisher=Paperlight
 DefaultDirName={localappdata}\Programs\Paperlight
 DefaultGroupName=Paperlight
@@ -17,8 +17,12 @@ SolidCompression=yes
 WizardStyle=modern
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
-CloseApplications=yes
+CloseApplications=no
 RestartApplications=no
+#ifdef ReleaseSigning
+SignTool=paperlight
+SignedUninstaller=yes
+#endif
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked

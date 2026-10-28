@@ -271,12 +271,12 @@ STRINGS[GUIDE_EN]=(
     '隐去与保存\n标记敏感区域后，选择“应用隐去”。Ctrl+S 保存当前文档；另存副本会保留原文件。隐去后的导出文件将移除无用对象和元数据。应用隐去或修改文本时，会清除当前会话对应的搜索缓存。“工具 > 清除本地搜索缓存”可移除全部识别缓存。\n\n'
     '识别准确率取决于扫描质量。编辑不会保留原有的证书签名。“保存”会保留原有密码保护。可通过“文件 > 保护 PDF”创建使用新保护设置的副本。所有者解锁后，“另存副本”会生成不加密的编辑副本。')
 
-ABOUT_EN=('Paperlight 1.1.0\nAn offline PDF workspace for Windows.\n\n'
+ABOUT_EN=('Paperlight 1.1.1\nAn offline PDF workspace for Windows.\n\n'
           'Built with PySide6 / Qt, PyMuPDF / MuPDF, and Tesseract. '
           'This source project is distributed under AGPL-3.0-or-later. '
           'Third-party notices are included with the application.\n\n'
           'Preview workflow references: Apple documentation. REA diagnostics were run on Windows; no Mac Preview binary was inspected.')
-STRINGS[ABOUT_EN]=('Paperlight 1.1.0\n适用于 Windows 的离线 PDF 工作区。\n\n'
+STRINGS[ABOUT_EN]=('Paperlight 1.1.1\n适用于 Windows 的离线 PDF 工作区。\n\n'
                   '使用 PySide6 / Qt、PyMuPDF / MuPDF 和 Tesseract 构建。项目源代码以 AGPL-3.0-or-later 许可发布，应用中附有第三方声明。\n\n'
                   'Preview 工作流参考 Apple 官方文档。已在 Windows 上运行 REA 诊断，未检查 Mac Preview 的二进制程序。')
 

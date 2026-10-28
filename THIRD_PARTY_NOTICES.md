@@ -12,4 +12,4 @@ Paperlight is distributed under AGPL-3.0-or-later. Corresponding application sou
 
 No Apple program files, icons, code or other proprietary assets are included. Workflow references and the REA evidence boundary are documented in `docs/rea-findings.md` in the source archive.
 
-- pypdf 6.21.1: BSD-3-Clause, used to parse and serialize bounded PDF content streams for object editing. https://github.com/py-pdf/pypdf . License text: assets/licenses/pypdf-LICENSE.
+- pypdf 6.21.2: BSD-3-Clause, used to parse and serialize bounded PDF content streams for object editing. https://github.com/py-pdf/pypdf . License text: assets/licenses/pypdf-LICENSE.

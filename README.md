@@ -1,6 +1,8 @@
 # Paperlight for Windows
 
-An offline PDF reader and editor with a toolbar and thumbnail sidebar, inspired by Preview's workflow. Built for Windows x64. Version 1.1.0.
+An offline PDF reader and editor with a toolbar and thumbnail sidebar, inspired by Preview's workflow. Built for Windows x64. Version 1.1.1.
+
+Security update: the 1.1.1 source fixes three pypdf denial-of-service advisories. Existing GitHub 1.1.0 downloads have not been replaced with a signed release. Verified publisher signing or Store distribution is pending. See [the download security review](docs/windows-download-security.md). No Microsoft malware-scan approval or security certification is claimed.
 
 Choose **PDF tools** or press **Ctrl+Shift+P** for a searchable, fully offline toolbox with 36 utilities. It includes compression, image/PDF conversion, text/table/image extraction, text comparison, metadata/bookmarks, watermarks/page numbers, page/layout operations, cleanup, scan color adjustments and reusable batch workflows. Tools export copies, support current unsaved edits and preserve PDF password protection. Protected inputs need explicit consent before exporting plain text, images or reports. See [the toolbox guide and Stirling comparison](docs/stirling-offline-study-1.1.0.md) for scope and limitations.
 
@@ -63,7 +65,7 @@ Use Python 3.12 x64 and PowerShell:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m pip install pyinstaller==6.22.3 pytest==9.1.1 'pypdf[crypto]==6.20.1'
+.\.venv\Scripts\python.exe -m pip install pyinstaller==6.22.3 pytest==9.1.1 'pypdf[crypto]==6.21.2'
 .\.venv\Scripts\python.exe main.py
 .\.venv\Scripts\python.exe -m pytest -q
 ```
@@ -78,6 +80,8 @@ Paperlight is licensed under AGPL-3.0-or-later. See LICENSE and THIRD_PARTY_NOTI
 
 
 ## Security assessment
+
+Version 1.1.1 updates a PDF dependency to fix three denial-of-service advisories and hardens toolbox staging and worker messages. See [the Windows download warning review](docs/windows-download-security.md) for verified findings, testing limits and publisher signing requirements. Development builds are unsigned. Public signed builds use `tools/build.ps1 -Release` and require a verified publisher certificate and Windows SDK SignTool. Neither checksums nor a signature alone guarantee that Microsoft will classify a new download as safe.
 
 Version 0.8 was internally assessed for a regulated/highly sensitive document target. See docs/security-audit-2026-10-19/assessment.md, raw scanner evidence, SBOM and release hashes. This is not an independent certification and the release is not approved by that assessment for regulated production use. Important open gates include OS sandboxing for native document parsing, signed releases, legacy temporary-data review and an independent assessment. Limits are 1 GiB input, 10,000 pages, 20,000-point page edges, 120 million declared image pixels and 32 million OCR raster pixels; these are guardrails, not complete process isolation. OCR stops after 90 seconds without worker output. Native/hidden-text redaction verification fails closed on detected residual text. Some malformed or unusual documents may therefore be rejected.
 

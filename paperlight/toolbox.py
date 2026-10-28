@@ -8,6 +8,23 @@ from .tool_catalog import TOOLS,BY_KEY,options_for
 from .core import file_version
 from .i18n import t
 
+def validate_worker_message(row,planned,received):
+    """Validate child-process data before updating widgets or opening a result."""
+    if not isinstance(row,dict):raise ValueError('Invalid worker message')
+    kind=row.get('kind')
+    def number(value,low,high):return type(value) is int and low<=value<=high
+    def message(value):return isinstance(value,str) and len(value)<=2048
+    if kind=='progress':
+        valid=number(row.get('total'),1,10000) and number(row.get('current'),0,row['total']) and message(row.get('message'))
+    elif kind=='result':
+        valid=isinstance(row.get('path'),str) and row['path'] in planned and row['path'] not in received and number(row.get('bytes'),0,2**63-1)
+    elif kind in ('error','fatal'):valid=message(row.get('message'))
+    elif kind=='done':
+        valid=isinstance(row.get('outputs'),list) and row['outputs']==received and number(row.get('failures'),0,len(planned)) and len(received)+row['failures']==len(planned)
+    else:valid=False
+    if not valid:raise ValueError('Invalid worker message')
+    return row
+
 class ToolboxDialog(QDialog):
     def __init__(self,window):
         super().__init__(window);self.window=window;self.job=None;self.stage=None;self.buffer=b'';self.results=[];self.steps=[];self.done_received=False
@@ -225,6 +242,7 @@ class ToolboxDialog(QDialog):
                         password=session._working_password if current else self.password.text(),other_password=self.other_password.text(),allow_plaintext=self.plain.isChecked(),
                         current_document=current,original_encrypted=session.encrypted if current else False,original_paths=[session.path] if current else [],
                         redaction_applied=session.redaction_applied if current else False,clean_content=session.native_object_edited if current else False)
+            self.planned_outputs={str(Path(output['path']).resolve()) for output in outputs}
             self.results=[];self.errors=[];self.buffer=b'';self.done_received=False;self.open_result.setEnabled(False);self.run_button.setEnabled(False);self.search.setEnabled(False);self.tools.setEnabled(False)
             self.job=QProcess(self);job=self.job;job.readyReadStandardOutput.connect(self.receive);job.readyReadStandardError.connect(lambda:job.readAllStandardError());job.finished.connect(self.job_finished)
             args=['--toolbox-worker'] if getattr(sys,'frozen',False) else [str(Path(__file__).resolve().parent.parent/'main.py'),'--toolbox-worker']
@@ -240,8 +258,11 @@ class ToolboxDialog(QDialog):
         if len(self.buffer)>2*1024*1024:self.timed_out();return
         while b'\n' in self.buffer:
             raw,self.buffer=self.buffer.split(b'\n',1)
-            try:row=json.loads(raw)
-            except ValueError:self.timed_out();return
+            try:
+                if self.done_received:raise ValueError()
+                row=validate_worker_message(json.loads(raw),self.planned_outputs,self.results)
+            except (ValueError,TypeError,RecursionError):
+                self.stop();self.status.setText(t('The toolbox worker returned invalid data.'));return
             self.watchdog.start(120000)
             if row['kind']=='progress':self.progress.setValue(round(100*row['current']/max(1,row['total'])));self.status.setText(t(row['message'])+f" {row['current']} / {row['total']}")
             elif row['kind']=='result':self.results.append(row['path'])

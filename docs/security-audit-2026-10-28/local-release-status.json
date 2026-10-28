@@ -1,0 +1,23 @@
+{
+  "version": "1.1.1",
+  "antivirus_enabled": false,
+  "realtime_protection_enabled": false,
+  "defender_scan": "Not performed: antivirus service inactive",
+  "files": [
+    {
+      "file": "dist\\Paperlight-Setup.exe",
+      "sha256": "99e0406772bd5cbc971c4b6286d1ac364fcb3f781792fada15f7af6c9b353315",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "dist\\Paperlight\\Paperlight.exe",
+      "sha256": "a00c2de02049f11198e014950021fe8b81d809bc580704edc0474ccd10d091e3",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "C:\\Users\\xue_c\\AppData\\Local\\Programs\\Paperlight\\Paperlight.exe",
+      "sha256": "a00c2de02049f11198e014950021fe8b81d809bc580704edc0474ccd10d091e3",
+      "authenticode": "NotSigned"
+    }
+  ]
+}

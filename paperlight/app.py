@@ -2141,7 +2141,7 @@ class Window(ObjectWindowMixin,QMainWindow):
 
     def about(self):
         QMessageBox.information(self,t('About Paperlight'),
-            t('Paperlight 1.1.0\nAn offline PDF workspace for Windows.\n\n'
+            t('Paperlight 1.1.1\nAn offline PDF workspace for Windows.\n\n'
             'Built with PySide6 / Qt, PyMuPDF / MuPDF, and Tesseract. '
             'This source project is distributed under AGPL-3.0-or-later. '
             'Third-party notices are included with the application.\n\n'

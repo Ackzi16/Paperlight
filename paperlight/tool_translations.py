@@ -1,5 +1,6 @@
 """Simplified Chinese labels for the offline toolbox."""
 STRINGS={
+'The toolbox worker returned invalid data.':'PDF 工具进程返回了无效数据，任务已停止。',
 'Pages':'页面','Rotate pages':'旋转页面','Degrees clockwise':'顺时针角度','Keep selected pages':'仅保留所选页','Remove selected pages':'移除所选页','Repair PDF':'修复 PDF',
 'Rotate selected pages clockwise, leaving other pages unchanged.':'顺时针旋转所选页，保留其他页的方向。',
 'Export only the selected pages, in the entered order.':'仅导出所选页面，并按输入的顺序排列。',

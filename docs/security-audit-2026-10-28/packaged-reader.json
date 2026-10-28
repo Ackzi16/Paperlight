@@ -1,0 +1,8 @@
+{
+  "executable": "C:\\Users\\xue_c\\OneDrive\\Documents\\ChatGPT\\Mac Preview\\dist\\Paperlight\\Paperlight.exe",
+  "worker_seconds": 0.544,
+  "packaged_english_ocr": true,
+  "packaged_chinese_ocr": true,
+  "gui_launch_render_exit": true,
+  "protected_pdf_worker_and_readonly_gui": true
+}

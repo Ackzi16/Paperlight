@@ -1,0 +1,100 @@
+[
+  {
+    "filename": "paperlight\\app.py",
+    "line_number": 653,
+    "test_id": "B105",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\app.py",
+    "line_number": 1119,
+    "test_id": "B105",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\app.py",
+    "line_number": 1674,
+    "test_id": "B105",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\core.py",
+    "line_number": 113,
+    "test_id": "B107",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\core.py",
+    "line_number": 184,
+    "test_id": "B110",
+    "issue_severity": "LOW",
+    "issue_text": "Try, Except, Pass detected."
+  },
+  {
+    "filename": "paperlight\\core.py",
+    "line_number": 255,
+    "test_id": "B107",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\i18n.py",
+    "line_number": 166,
+    "test_id": "B105",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: '密码'"
+  },
+  {
+    "filename": "paperlight\\security.py",
+    "line_number": 38,
+    "test_id": "B107",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\tool_engine.py",
+    "line_number": 21,
+    "test_id": "B107",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\tool_engine.py",
+    "line_number": 136,
+    "test_id": "B107",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\tool_engine.py",
+    "line_number": 320,
+    "test_id": "B105",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  },
+  {
+    "filename": "paperlight\\typography.py",
+    "line_number": 76,
+    "test_id": "B112",
+    "issue_severity": "LOW",
+    "issue_text": "Try, Except, Continue detected."
+  },
+  {
+    "filename": "paperlight\\typography.py",
+    "line_number": 192,
+    "test_id": "B112",
+    "issue_severity": "LOW",
+    "issue_text": "Try, Except, Continue detected."
+  },
+  {
+    "filename": "paperlight\\worker.py",
+    "line_number": 70,
+    "test_id": "B107",
+    "issue_severity": "LOW",
+    "issue_text": "Possible hardcoded password: ''"
+  }
+]
