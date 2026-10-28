@@ -1,6 +1,8 @@
 # Paperlight for Windows
 
-An offline PDF reader and editor with a toolbar and thumbnail sidebar, inspired by Preview's workflow. Built for Windows x64. Version 1.0.0.
+An offline PDF reader and editor with a toolbar and thumbnail sidebar, inspired by Preview's workflow. Built for Windows x64. Version 1.1.0.
+
+Choose **PDF tools** or press **Ctrl+Shift+P** for a searchable, fully offline toolbox with 36 utilities. It includes compression, image/PDF conversion, text/table/image extraction, text comparison, metadata/bookmarks, watermarks/page numbers, page/layout operations, cleanup, scan color adjustments and reusable batch workflows. Tools export copies, support current unsaved edits and preserve PDF password protection. Protected inputs need explicit consent before exporting plain text, images or reports. See [the toolbox guide and Stirling comparison](docs/stirling-offline-study-1.1.0.md) for scope and limitations.
 
 [Download the Windows installer](https://github.com/Ackzi16/Paperlight/releases/latest/download/Paperlight-Setup.exe) or see the [release downloads](https://github.com/Ackzi16/Paperlight/releases/latest) for the portable build, source and checksums.
 

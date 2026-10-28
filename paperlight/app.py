@@ -783,6 +783,9 @@ class Window(ObjectWindowMixin,QMainWindow):
         toolbar.addWidget(title_panel)
         self.index_action = self.action(t('Recognize text'), self.recognize_document, view=True)
         tools_menu.addAction(self.index_action)
+        self.toolbox_action=self.action(t('PDF tools'),self.open_toolbox,'Ctrl+Shift+P',document=False)
+        tools_menu.addAction(self.toolbox_action)
+        control(toolbar,self.toolbox_action,'form',True)
         self.stop_action = self.action(t('Stop OCR'), self.stop_index)
         tools_menu.addAction(self.stop_action)
         tools_menu.addAction(self.action(t('Clear local search cache'), self.clear_cache, document=False))
@@ -1481,6 +1484,13 @@ class Window(ObjectWindowMixin,QMainWindow):
         menu.addActions([self.copy_action,self.select_all_action,self.clear_selection_action])
         menu.exec(position)
 
+    def open_toolbox(self):
+        from .toolbox import ToolboxDialog
+        if not self.commit_inline_text():return
+        self.stop_index();self.edit_controller.stop()
+        dialog=ToolboxDialog(self);dialog.exec()
+        self.page_object_key=None;self.update_page_objects()
+
     def pick_color(self):
         color=QColorDialog.getColor(self.canvas.pen_color,self,t('Ink color'))
         if color.isValid():
@@ -2131,7 +2141,7 @@ class Window(ObjectWindowMixin,QMainWindow):
 
     def about(self):
         QMessageBox.information(self,t('About Paperlight'),
-            t('Paperlight 1.0.0\nAn offline PDF workspace for Windows.\n\n'
+            t('Paperlight 1.1.0\nAn offline PDF workspace for Windows.\n\n'
             'Built with PySide6 / Qt, PyMuPDF / MuPDF, and Tesseract. '
             'This source project is distributed under AGPL-3.0-or-later. '
             'Third-party notices are included with the application.\n\n'

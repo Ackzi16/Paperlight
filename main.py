@@ -31,6 +31,10 @@ def attach_worker_pipes():
 
 
 def entry():
+    if '--toolbox-worker' in sys.argv:
+        attach_worker_pipes()
+        from paperlight.tool_worker import main
+        return main()
     if '--edit-worker' in sys.argv:
         attach_worker_pipes()
         from paperlight.edit_worker import main

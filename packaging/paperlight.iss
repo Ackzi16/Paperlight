@@ -1,7 +1,7 @@
 [Setup]
 AppId={{BA4B931F-2D52-49D1-A8A0-A947807532D0}
 AppName=Paperlight
-AppVersion=1.0.0
+AppVersion=1.1.0
 AppPublisher=Paperlight
 DefaultDirName={localappdata}\Programs\Paperlight
 DefaultGroupName=Paperlight
